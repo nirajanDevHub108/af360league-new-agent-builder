@@ -2,20 +2,29 @@ public class PortfolioValueCalculator {
     
     // Get total portfolio value
     @InvocableMethod(label='Calculate Total Portfolio Value' 
-                     description='Returns sum of financial account loan amounts. Optionally filter by status.')
+                     description='Returns sum of financial account loan amounts. Optionally filter by status and account type.')
     public static List<ValueResult> calculatePortfolioValue(List<InputRequest> requests) {
         // Get input parameters (default to 'Active' status if not provided)
         String status = 'Active';
+        String accountType = null;
         
         if (requests != null && requests.size() > 0 && requests[0] != null) {
             InputRequest input = requests[0];
             if (input.status != null && input.status != '') {
                 status = input.status;
             }
+            if (input.accountType != null && input.accountType != '') {
+                accountType = input.accountType;
+            }
         }
         
         // Query financial accounts with optional filters
-        String query = 'SELECT Id, Original_Loan_Amount__c FROM FinancialAccount WHERE Status = :status';
+        String query;
+        if (accountType != null) {
+            query = 'SELECT Id, Original_Loan_Amount__c FROM FinancialAccount WHERE Status = :status AND Type = :accountType';
+        } else {
+            query = 'SELECT Id, Original_Loan_Amount__c FROM FinancialAccount WHERE Status = :status';
+        }
         
         List<FinancialAccount> accounts = Database.query(query);
         
@@ -37,6 +46,10 @@ public class PortfolioValueCalculator {
         @InvocableVariable(label='Status' 
                           description='Optional: Filter by status (e.g., Active, Closed). Defaults to Active if not provided.')
         public String status;
+        
+        @InvocableVariable(label='Account Type' 
+                          description='Optional: Filter by FinancialAccount.Type (e.g., Mortgage, Loan). Leave blank to include all types.')
+        public String accountType;
     }
     
     // Output wrapper class for invocable method results
@@ -46,4 +59,3 @@ public class PortfolioValueCalculator {
         public Decimal totalValue;
     }
 }
-
